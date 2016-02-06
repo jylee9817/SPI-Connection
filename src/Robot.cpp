@@ -1,5 +1,6 @@
 #include "WPILib.h"
 #include "Timer.h"
+#include "SPI.h"
 
 class Robot: public IterativeRobot
 {
@@ -11,9 +12,9 @@ private:
 	std::string autoSelected;
 
 	SPI* spi;
-	unsigned char toSend[1]; //saves input from lidar in byte array
+	unsigned char buffer[1]; //saves input from lidar in byte array
 	unsigned char dataToSend[0];
-	uint8_t size[2];
+	unsigned char size = 8;
 	int distance; //distance calculated in cm
 
 	void RobotInit()
@@ -25,8 +26,12 @@ private:
 
 		//Initialize the I2C connectin on address 84
 		spi = new SPI(SPI::Port::kOnboardCS0); //you can change the port; kOnboardCS0-3
+		spi->Init();
 		spi->SetClockRate(500000);
 		spi->SetMSBFirst();
+		spi->SetSampleDataOnFalling();
+		spi->SetClockActiveLow();
+		spi->SetChipSelectActiveLow();
 	}
 
 
@@ -68,8 +73,8 @@ private:
 
 	void TeleopPeriodic()
 	{
-		spi->Transaction(dataToSend[0], toSend[2], size[0]); //(dataToSend, dataReceived, size)
-		distance = (int)((toSend[0] <<8) + toSend[2]);
+		spi->Read(true, buffer, size); //(bool initiate, uint8_t* dataReceived, uint8_t size)
+		distance = (int)((buffer[0] <<8) + buffer[2]);
 		SmartDashboard::PutNumber("Distance", distance);
 	}
 
