@@ -12,10 +12,10 @@ private:
 	std::string autoSelected;
 
 	SPI* spi;
-	unsigned char buffer[1]; //saves input from lidar in byte array
-	unsigned char dataToSend[0];
-	unsigned char size = 8;
-	int distance; //distance calculated in cm
+	/*unsigned char*/uint8_t buffer[8]; //saves input from lidar in byte array
+	/*unsigned char*/uint8_t dataToSend[1] = {65};
+	/*unsigned char*/uint8_t size = 2;
+	int32_t distance; //distance calculated in cm
 
 	void RobotInit()
 	{
@@ -26,7 +26,6 @@ private:
 
 		//Initialize the I2C connectin on address 84
 		spi = new SPI(SPI::Port::kOnboardCS0); //you can change the port; kOnboardCS0-3
-		spi->Init();
 		spi->SetClockRate(500000);
 		spi->SetMSBFirst();
 		spi->SetSampleDataOnFalling();
@@ -73,9 +72,11 @@ private:
 
 	void TeleopPeriodic()
 	{
-		spi->Read(true, buffer, size); //(bool initiate, uint8_t* dataReceived, uint8_t size)
-		distance = (int)((buffer[0] <<8) + buffer[2]);
+		spi->Transaction(dataToSend, buffer, size); //(bool initiate, uint8_t* dataReceived, uint8_t size)
+		distance = (int16_t)((buffer[2] << 8) | buffer[1]);//(uint32_t)buffer;//
 		SmartDashboard::PutNumber("Distance", distance);
+
+		Wait(1);
 	}
 
 	void TestPeriodic()
