@@ -2,35 +2,49 @@
 #include "Timer.h"
 #include "SPI.h"
 
+#include "iostream"
+#include "fstream"
+
+using namespace std;
+
 class Robot: public IterativeRobot
 {
 private:
-	LiveWindow *lw = LiveWindow::GetInstance();
-	SendableChooser *chooser;
-	const std::string autoNameDefault = "Default";
-	const std::string autoNameCustom = "My Auto";
-	std::string autoSelected;
+
+	Joystick* joy;
 
 	SPI* spi;
-	/*unsigned char*/uint8_t buffer[8]; //saves input from lidar in byte array
-	/*unsigned char*/uint8_t dataToSend[1] = {65};
-	/*unsigned char*/uint8_t size = 2;
-	int32_t distance; //distance calculated in cm
+	uint8_t buffer[8] = {1,2,3,4,5,6,7,8}; //saves input from lidar in byte array
+	uint8_t dataToSend[1] = {37};
+	//uint8_t Data2[1] = {45};
+
+	//uint8_t buff2[8] = {1,2,3,4,5,6,7,8};
+
+	uint8_t size = 2;//changed it to 4, works after this change, 0 or 1 does not work
+
+	uint16_t distance;
+
+	double HZ = 10000;
 
 	void RobotInit()
 	{
-		chooser = new SendableChooser();
-		chooser->AddDefault(autoNameDefault, (void*)&autoNameDefault);
-		chooser->AddObject(autoNameCustom, (void*)&autoNameCustom);
-		SmartDashboard::PutData("Auto Modes", chooser);
 
-		//Initialize the I2C connectin on address 84
-		spi = new SPI(SPI::Port::kOnboardCS0); //you can change the port; kOnboardCS0-3
-		spi->SetClockRate(500000);
+		/*ofstream myfile("example.txt", ios::in);
+		myfile.open("example.txt");
+		myfile << "This is a line.\n";
+		myfile.close();*/
+		joy = new Joystick(0);
+
+		//Initialize the I2C connection on address 84
+		spi = new SPI(SPI::Port::kOnboardCS3); //you can change the port; kOnboardCS0-3
+		spi->SetClockRate(10000);
 		spi->SetMSBFirst();
-		spi->SetSampleDataOnFalling();
-		spi->SetClockActiveLow();
-		spi->SetChipSelectActiveLow();
+		spi->SetSampleDataOnFalling();//correct, do not use Rising
+		spi->SetClockActiveLow();//correct, do not use High
+		spi->SetChipSelectActiveLow();//correct, do not use High
+		//spilib_setspeed(spilib_open("/dev/spidev0.0"), HZ);
+
+
 	}
 
 
@@ -45,24 +59,12 @@ private:
 	 */
 	void AutonomousInit()
 	{
-		autoSelected = *((std::string*)chooser->GetSelected());
-		//std::string autoSelected = SmartDashboard::GetString("Auto Selector", autoNameDefault);
-		std::cout << "Auto selected: " << autoSelected << std::endl;
 
-		if(autoSelected == autoNameCustom){
-			//Custom Auto goes here
-		} else {
-			//Default Auto goes here
-		}
 	}
 
 	void AutonomousPeriodic()
 	{
-		if(autoSelected == autoNameCustom){
-			//Custom Auto goes here
-		} else {
-			//Default Auto goes here
-		}
+
 	}
 
 	void TeleopInit()
@@ -72,16 +74,32 @@ private:
 
 	void TeleopPeriodic()
 	{
-		spi->Transaction(dataToSend, buffer, size); //(bool initiate, uint8_t* dataReceived, uint8_t size)
-		distance = (int16_t)((buffer[2] << 8) | buffer[1]);//(uint32_t)buffer;//
-		SmartDashboard::PutNumber("Distance", distance);
 
-		Wait(1);
+		/*ofstream myfile("example.txt", ios::in);
+		myfile.open("example.txt");
+		myfile << "test numbers";
+		myfile.close();*/
+		joy = new Joystick(0);
+
+		dataToSend[0] = -(joy->GetY()*90) + 90;
+		SmartDashboard::PutNumber("data to send", dataToSend[0]);
+
+		spi->Transaction(dataToSend, buffer, size);
+
+		//distance = buffer[0];//packet 2//(PK1 << 8) | PK2;
+
+		SmartDashboard::PutNumber("Distance 0", buffer[0]);
+		SmartDashboard::PutNumber("Distance 1", buffer[1]);
+		SmartDashboard::PutNumber("Distance 2", buffer[2]);
+		SmartDashboard::PutNumber("Distance 3", buffer[3]);
+		SmartDashboard::PutNumber("Distance 4", buffer[4]);
+
+		Wait(0);
 	}
 
 	void TestPeriodic()
 	{
-		lw->Run();
+
 	}
 };
 
