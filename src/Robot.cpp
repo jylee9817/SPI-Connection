@@ -81,20 +81,50 @@ private:
 		myfile.close();*/
 		joy = new Joystick(0);
 
-		dataToSend[0] = -(joy->GetY()*90) + 90;
+		dataToSend[0] = 37;//-(joy->GetY()*90) + 90;
+/*
+		if(joy->GetRawButton(3) == true)
+		{
+			dataToSend[0] = 200;//stop
+		}
+
+		if(joy->GetRawButton(2) == true)
+		{
+			dataToSend[0] = 201;//driver control
+		}
+
+		if(joy->GetRawButton(4) == true)
+		{
+			dataToSend[0] = 202;//scan
+		}
+
+		if(joy->GetRawButton(5) == true)
+		{
+			dataToSend[0] = 203;//get distance
+		}*/
+
 		SmartDashboard::PutNumber("data to send", dataToSend[0]);
 
 		spi->Transaction(dataToSend, buffer, size);
 
+		distance = buffer[0];
+
+		Wait(.1);
+
+		dataToSend[0] = 47;
+
+		spi->Transaction(dataToSend, buffer, size);
+
+		distance = (distance << 8) | buffer[0];
 		//distance = buffer[0];//packet 2//(PK1 << 8) | PK2;
 
 		SmartDashboard::PutNumber("Distance 0", buffer[0]);
 		SmartDashboard::PutNumber("Distance 1", buffer[1]);
 		SmartDashboard::PutNumber("Distance 2", buffer[2]);
 		SmartDashboard::PutNumber("Distance 3", buffer[3]);
-		SmartDashboard::PutNumber("Distance 4", buffer[4]);
+		SmartDashboard::PutNumber("Distance", distance);
 
-		Wait(0);
+		Wait(.1);
 	}
 
 	void TestPeriodic()
